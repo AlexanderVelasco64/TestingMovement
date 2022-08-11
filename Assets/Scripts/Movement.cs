@@ -5,30 +5,55 @@ using UnityEngine;
 public class Movement : MonoBehaviour
 {
 
-    private CharacterController controller;
+    public CharacterController controller;
+    public Transform cam;
+
     private Vector3 playerVelocity; // Represents 3D vector and points
     private bool groundedPlayer;
-    private float playerSpeed = 2.0f;
-    private float jumpHeight = 1.0f;
-    private float gravityValue = -9.81f;
+    public float playerSpeed = 6f;
+    public float jumpHeight = 1.0f;
+    public float gravityValue = -9.81f;
+    public float turnSmoothTime = 0.1f;
+    private float turnSmoothVelocity;
 
-
-    // Start is called before the first frame update
-    void Start()
-    {
-        //Create a Controller
-        controller = gameObject.AddComponent<CharacterController>();
-
-    }
 
     // Update is called once per frame
     void Update()
     {
+
+        float horizontal = Input.GetAxisRaw("Horizontal"); // Get Raw Horizontal Input (not smoothed to 1 or 0)
+        float vertical = Input.GetAxisRaw("Vertical");   // Get Raw Vertical Input (not smoothed)
+        Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized; //Direction is a vector pointing in the direction of the horizontal and vertical inputs, normalized to have a magnitude of 1
+
+        if(direction.magnitude >= 0.1f) //If direction is greater than 0.1 (ensures a deadzone)
+        {
+            // Get the angle of the movement, convert it to degrees (because Atan2 returns radians) and add the angle of the camera.
+            // The camera angle needs to be added because the user needs to travel in the direction the camera is pointing in the y axis
+            float targetAngle = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg + cam.eulerAngles.y;
+
+            // Get the angle after it has been smoothed from the original direction to the target direction with the speed of smooth velocity and within smooth time
+            float angle = Mathf.SmoothDampAngle(transform.eulerAngles.y, targetAngle, ref turnSmoothVelocity, turnSmoothTime);
+
+            // Transform the players rotation but the amount calculated 
+            transform.rotation = Quaternion.Euler(0f, angle, 0f);
+
+            // Get direction the player will be moving 
+            Vector3 moveDir = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
+
+            // Move player in direction, normalized to 1, multiplied by speed and time 
+            // m/s * s = m  speed * time = distance traveled
+            controller.Move(moveDir.normalized * playerSpeed * Time.deltaTime);
+        }
+
+        /*
+
+        // Determine if player is in the air
         groundedPlayer = controller.isGrounded;
 
-        if(groundedPlayer && playerVelocity.y < 0)
+        // If player is grounded and not currently falling or rising
+        if(groundedPlayer && playerVelocity.y < 0.1)
         {
-            playerVelocity.y = 0f;
+            playerVelocity.y = 0f; // Set player vertical speed to zero
         }
 
         var horizontal = Input.GetAxis("Horizontal"); // Get Horizontal Input mapped to Arrow Keys
@@ -37,7 +62,7 @@ public class Movement : MonoBehaviour
         Vector3 move = new Vector3(horizontal, 0, vertical); // Vector3(float x, float y, float z);
         controller.Move(move * Time.deltaTime * playerSpeed); // Direction Vector * Time * Velocity;
 
-        if(move != Vector3.zero)
+        if(move != Vector3.zero) // If player is not moving
         {
             gameObject.transform.forward = move;
         }
@@ -50,6 +75,8 @@ public class Movement : MonoBehaviour
 
         playerVelocity.y += gravityValue * Time.deltaTime; // Add Velocity to players vertical
         controller.Move(playerVelocity * Time.deltaTime);  // Moves player to match velocity
+
+        */
 
     }
 }
