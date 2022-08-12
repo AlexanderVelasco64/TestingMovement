@@ -10,7 +10,7 @@ public class Movement : MonoBehaviour
 
     private Vector3 playerVelocity; // Represents 3D vector and points
     private bool groundedPlayer;
-    public float playerSpeed = 6f;
+    public float playerSpeed = 20f;
     public float jumpHeight = 1.0f;
     public float gravityValue = -9.81f;
     public float turnSmoothTime = 0.1f;
@@ -23,8 +23,10 @@ public class Movement : MonoBehaviour
 
         float horizontal = Input.GetAxisRaw("Horizontal"); // Get Raw Horizontal Input (not smoothed to 1 or 0)
         float vertical = Input.GetAxisRaw("Vertical");   // Get Raw Vertical Input (not smoothed)
+        groundedPlayer = Input.GetButtonDown("Jump"); // Get Jump
+        
         Vector3 direction = new Vector3(horizontal, 0f, vertical).normalized; //Direction is a vector pointing in the direction of the horizontal and vertical inputs, normalized to have a magnitude of 1
-
+        
         if(direction.magnitude >= 0.1f) //If direction is greater than 0.1 (ensures a deadzone)
         {
             // Get the angle of the movement, convert it to degrees (because Atan2 returns radians) and add the angle of the camera.
@@ -44,6 +46,13 @@ public class Movement : MonoBehaviour
             // m/s * s = m  speed * time = distance traveled
             controller.Move(moveDir.normalized * playerSpeed * Time.deltaTime);
         }
+
+        if(groundedPlayer == true){
+            direction.y += Mathf.Sqrt(jumpHeight * -3.0f * gravityValue);
+        }
+        direction.y += gravityValue * Time.deltaTime;
+        controller.Move(direction * Time.deltaTime);
+        
 
         /*
 
